@@ -1,0 +1,64 @@
+# TPlanet Multi-tenant Environment Override
+# Usage: docker compose -f docker-compose.yml -f deploy/docker-compose.multi-tenant.yml up -d
+
+services:
+  frontend:
+    container_name: tplanet-frontend-multi-tenant
+    command: npm run dev
+    ports:
+      - "6176:5176"
+    environment:
+      - VITE_HOST_URL_TPLANET=https://multi-tenant.4impact.cc
+      - VITE_API_LLMTWINS=https://multi-tenant.4impact.cc
+
+  backend:
+    container_name: tplanet-backend-multi-tenant
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile.multi-tenant
+    command: python backend/manage.py runserver 0.0.0.0:5567
+    ports:
+      - "5580:5567"
+    environment:
+      - DJANGO_SETTINGS_MODULE=backend.settings_multitenant
+      - DEBUG=True
+      - DB_NAME=tplanet
+      - DB_HOST=db
+      - DB_PASSWORD=postgres
+      - NANTOU_DB_NAME=tplanet
+      - NANTOU_DB_HOST=db-nantou
+      - NANTOU_DB_PASSWORD=postgres
+
+  db:
+    container_name: tplanet-db-multi-tenant
+    ports:
+      - "5435:5432"
+
+  db-nantou:
+    image: postgres:15-alpine
+    container_name: tplanet-db-nantou
+    environment:
+      POSTGRES_DB: tplanet
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db_nantou_data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    networks:
+      - tplanet-net
+
+  llmtwins:
+    container_name: tplanet-llmtwins-multi-tenant
+    ports:
+      - "8002:8002"
+
+  llmtwins-wrapper:
+    container_name: tplanet-llmtwins-wrapper-multi-tenant
+    ports:
+      - "8004:8001"
+    environment:
+      - VALID_TENANTS=default,nantou-gov
+
+volumes:
+  db_nantou_data:

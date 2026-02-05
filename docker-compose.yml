@@ -1,0 +1,69 @@
+# TPlanet Monorepo - Base Docker Compose
+# Usage:
+#   Beta:   docker compose -f docker-compose.yml -f deploy/docker-compose.beta.yml up -d
+#   Stable: docker compose -f docker-compose.yml -f deploy/docker-compose.stable.yml up -d
+
+services:
+  # Frontend
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./apps/frontend:/app
+    networks:
+      - tplanet-net
+
+  # Backend
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./apps/backend:/server
+    depends_on:
+      - db
+    networks:
+      - tplanet-net
+
+  # Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-tplanet}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - tplanet-net
+
+  # LLMTwins
+  llmtwins:
+    build:
+      context: ./apps/llmtwins
+      dockerfile: Dockerfile
+    volumes:
+      - ./apps/llmtwins:/app
+    networks:
+      - tplanet-net
+
+  # Multi-tenant LLMTwins Wrapper
+  llmtwins-wrapper:
+    build:
+      context: ./packages/multi-tenant/llmtwins_wrapper
+    environment:
+      - LLMTWINS_BASE_URL=http://llmtwins:8002
+      - DEFAULT_TENANT=default
+      - TENANT_HEADER=X-Tenant-ID
+    depends_on:
+      - llmtwins
+    networks:
+      - tplanet-net
+
+volumes:
+  db_data:
+
+networks:
+  tplanet-net:
+    driver: bridge

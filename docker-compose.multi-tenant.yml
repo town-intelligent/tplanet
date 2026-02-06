@@ -1,5 +1,5 @@
 # TPlanet Multi-tenant Environment Override
-# Usage: docker compose -f docker-compose.yml -f deploy/docker-compose.multi-tenant.yml up -d
+# Usage: docker compose -f docker-compose.yml -f docker-compose.multi-tenant.yml up -d
 
 services:
   frontend:
@@ -13,21 +13,21 @@ services:
 
   backend:
     container_name: tplanet-backend-multi-tenant
-    build:
-      context: ./apps/backend
-      dockerfile: Dockerfile.multi-tenant
     command: python backend/manage.py runserver 0.0.0.0:5567
     ports:
       - "5580:5567"
     environment:
       - DJANGO_SETTINGS_MODULE=backend.settings_multitenant
       - DEBUG=True
-      - DB_NAME=tplanet
-      - DB_HOST=db
-      - DB_PASSWORD=postgres
-      - NANTOU_DB_NAME=tplanet
-      - NANTOU_DB_HOST=db-nantou
-      - NANTOU_DB_PASSWORD=postgres
+      - DB_NAME=${DB_NAME:-tplanet}
+      - DB_HOST=${DB_HOST:-db}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - NANTOU_DB_NAME=${NANTOU_DB_NAME:-tplanet}
+      - NANTOU_DB_HOST=${NANTOU_DB_HOST:-db-nantou}
+      - NANTOU_DB_PASSWORD=${NANTOU_DB_PASSWORD:-postgres}
+    depends_on:
+      - db
+      - db-nantou
 
   db:
     container_name: tplanet-db-multi-tenant
@@ -38,15 +38,23 @@ services:
     image: postgres:15-alpine
     container_name: tplanet-db-nantou
     environment:
-      POSTGRES_DB: tplanet
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${NANTOU_DB_NAME:-tplanet}
+      POSTGRES_USER: ${NANTOU_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${NANTOU_DB_PASSWORD:-postgres}
     volumes:
       - db_nantou_data:/var/lib/postgresql/data
     ports:
       - "5436:5432"
     networks:
       - tplanet-net
+
+  ollama:
+    container_name: tplanet-ollama-multi-tenant
+
+  ollama-gateway:
+    container_name: tplanet-ollama-gateway-multi-tenant
+    ports:
+      - "8182:8082"
 
   llmtwins:
     container_name: tplanet-llmtwins-multi-tenant

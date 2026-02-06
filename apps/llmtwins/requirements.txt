@@ -1,5 +1,0 @@
-phidata
-python-dotenv
-fastapi
-uvicorn
-openai

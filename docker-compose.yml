@@ -1,32 +1,40 @@
-# TPlanet Monorepo - Base Docker Compose
+# TPlanet Deploy - Base Docker Compose
+#
 # Usage:
-#   Beta:   docker compose -f docker-compose.yml -f deploy/docker-compose.beta.yml up -d
-#   Stable: docker compose -f docker-compose.yml -f deploy/docker-compose.stable.yml up -d
+#   Beta:         docker compose -f docker-compose.yml -f docker-compose.beta.yml up -d
+#   Stable:       docker compose -f docker-compose.yml -f docker-compose.stable.yml up -d
+#   Multi-tenant: docker compose -f docker-compose.yml -f docker-compose.multi-tenant.yml up -d
+#
+# Prerequisites:
+#   Clone repos to sibling directories:
+#     ../tplanet-AI/       (frontend)
+#     ../tplanet-daemon/   (backend)
+#     ../LLMTwins/         (ai service)
 
 services:
-  # Frontend
+  # Frontend - React + Vite
   frontend:
     build:
-      context: ./apps/frontend
+      context: ../tplanet-AI
       dockerfile: Dockerfile
     volumes:
-      - ./apps/frontend:/app
+      - ../tplanet-AI:/app
     networks:
       - tplanet-net
 
-  # Backend
+  # Backend - Django
   backend:
     build:
-      context: ./apps/backend
+      context: ../tplanet-daemon
       dockerfile: Dockerfile
     volumes:
-      - ./apps/backend:/server
+      - ../tplanet-daemon:/server
     depends_on:
       - db
     networks:
       - tplanet-net
 
-  # Database
+  # Database - PostgreSQL
   db:
     image: postgres:15-alpine
     environment:
@@ -38,13 +46,13 @@ services:
     networks:
       - tplanet-net
 
-  # LLMTwins
+  # LLMTwins - AI RAG & Agent Service
   llmtwins:
     build:
-      context: ./apps/llmtwins
+      context: ../LLMTwins
       dockerfile: Dockerfile
     volumes:
-      - ./apps/llmtwins:/app
+      - ../LLMTwins:/app
     networks:
       - tplanet-net
 

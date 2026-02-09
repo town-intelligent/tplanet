@@ -70,7 +70,7 @@ function UploadModal({ show, onHide, projectUUID, projectName }) {
   const checkHasFile = async (uuid) => {
     try {
       const response = await fetch(
-        "https://beta-tplanet-backend.ntsdgs.tw/projects/download_attachment",
+        `${import.meta.env.VITE_HOST_URL_TPLANET}/api/projects/download_attachment`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -132,7 +132,7 @@ function UploadModal({ show, onHide, projectUUID, projectName }) {
     setUpload(null);
 
     const url =
-      "https://beta-tplanet-backend.ntsdgs.tw/projects/upload_attachment";
+      `${import.meta.env.VITE_HOST_URL_TPLANET}/api/projects/upload_attachment`;
     const formData = new FormData();
     formData.append("uuid", projectUUID);
     formData.append("attachment", file, file.name);
@@ -160,7 +160,7 @@ function UploadModal({ show, onHide, projectUUID, projectName }) {
   const handleDownload = async () => {
   try {
     const response = await fetch(
-      "https://beta-tplanet-backend.ntsdgs.tw/projects/download_attachment",
+      `${import.meta.env.VITE_HOST_URL_TPLANET}/api/projects/download_attachment`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -61,7 +61,7 @@ export default function SimpleChart({ chartData }) {
       
       try {
         // 使用 Vite 環境變數
-        const apiUrl = import.meta.env.VITE_HOST_URL_TPLANET || 'https://beta-tplanet-backend.ntsdgs.tw';
+        const apiUrl = import.meta.env.VITE_HOST_URL_TPLANET || '';
         
         const response = await fetch(`${apiUrl}/api/dashboard/sdgssimplaechard`, {
           method: 'POST',

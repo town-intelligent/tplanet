@@ -308,6 +308,7 @@
 
     "user_registration_statistics": "使用者註冊統計",
     "add_account": "新增帳號",
+    "add_member": "新增會員",
     "email": "電子郵件",
     "contact_person": "承辦窗口",
     "project_team": "地方團隊",
@@ -322,6 +323,11 @@
     "enable_account": "啟用帳號",
     "disable_account": "停用帳號",
     "delete_account": "刪除帳號",
+    "remove_member": "移除會員",
+    "check_remove_member": "確定要將此會員從名單移除（帳號保留）",
+    "remove_member_success": "已移除會員",
+    "remove_member_fail": "移除失敗",
+    "remove_member_error": "移除會員時發生錯誤",
 
     "showing": "顯示",
     "to": "到",

@@ -12,7 +12,7 @@ const AddAccount = () => {
     handler: "",       // -> hoster
     email: "",
     department: "",    // -> undertake
-    role: "",          // 'admin' | 'user' -> '系統管理員' | '一般使用者'
+    role: "一般使用者",  // 固定為一般使用者
     phone: "",         // -> phone_number
     enabled: true,     // 後端目前固定啟用；預留
   });
@@ -22,7 +22,6 @@ const AddAccount = () => {
   const departments = useDepartments();
 
   const roleMap = {
-    admin: "系統管理員",
     user: "一般使用者",
   };
 
@@ -78,7 +77,7 @@ const AddAccount = () => {
         handler: "",
         email: "",
         department: "",
-        role: "",
+        role: "一般使用者",
         phone: "",
         enabled: s.enabled,
       }));
@@ -149,16 +148,12 @@ const AddAccount = () => {
             <Col md={6}>
               <Form.Group controlId="formRole">
                 <Form.Label>{t("addAccount.role")}</Form.Label>
-                <Form.Select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">{t("addAccount.role_placeholder")}</option>
-                  <option value="admin">{t("addAccount.role_admin")}</option>
-                  <option value="user">{t("addAccount.role_user")}</option>
-                </Form.Select>
+                <Form.Control
+                  type="text"
+                  value={t("addAccount.role_user")}
+                  readOnly
+                  className="bg-gray-100"
+                />
               </Form.Group>
             </Col>
           </Row>

@@ -33,6 +33,24 @@ export async function forgotPassword(email) {
   }
 }
 
+export async function removeMember(email) {
+  const formdata = new FormData();
+  formdata.append("email", email);
+
+  try {
+    const response = await apiPost('/accounts/remove_member', formdata);
+
+    if (response.success) {
+      return { success: true, message: "已移除會員" };
+    } else {
+      return { success: false, message: response.error?.message || "移除失敗" };
+    }
+  } catch (error) {
+    console.error("There was a problem with the removeMember API:", error);
+    return { success: false, message: error.message || "移除會員時發生錯誤" };
+  }
+}
+
 export async function deleteAccount(email) {
   const formdata = new FormData();
   formdata.append("email", email);

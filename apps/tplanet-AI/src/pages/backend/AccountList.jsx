@@ -11,10 +11,12 @@ import DeleteIcon from "../../assets/delete_icon.svg";
 
 import {
   deleteAccount,
+  removeMember,
   getAccountStatus,
   setAccountActiveStatus,
 } from "../../utils/Accounts";
 import { apiGet } from "../../utils/api";
+import { useHosters } from "../../utils/multi-tenant";
 import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
 
@@ -424,7 +426,6 @@ const AccountList = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("所有狀態");
-  const [roleFilter, setRoleFilter] = useState("所有角色");
   const [modalShow, setModalShow] = useState(false);
   const [visitorModalShow, setVisitorModalShow] = useState(false);
   const [loginRecordsModal, setLoginRecordsModal] = useState({ show: false, userEmail: "" });
@@ -433,6 +434,7 @@ const AccountList = () => {
   const [editModal, setEditModal] = useState({ show: false, account: null });
   const itemsPerPage = 20;
   const { t } = useTranslation();
+  const allHosters = useHosters();
 
   const handleEditAccount = (account) => {
     console.log("Opening edit modal for:", account);
@@ -457,9 +459,15 @@ const AccountList = () => {
       const list = Array.isArray(response.data?.users) ? response.data.users : [];
       const baseItems = list.map(normalize);
 
-      // 這裡逐一用 get_user_info 查 active，補上 status = 啟用 / 停用
+      // 只顯示 hosters index[1:]（排除 index 0 系統管理者）
+      const hosterEmails = allHosters.slice(1).map((e) => e.toLowerCase());
+      const memberItems = hosterEmails.length > 0
+        ? baseItems.filter((acc) => hosterEmails.includes(acc.email.toLowerCase()))
+        : baseItems;
+
+      // 逐一用 get_user_info 查 active，補上 status = 啟用 / 停用
       const itemsWithStatus = await Promise.all(
-        baseItems.map(async (acc) => {
+        memberItems.map(async (acc) => {
           try {
             const statusRes = await getAccountStatus(acc.email);
             if (statusRes.success && typeof statusRes.active === "boolean") {
@@ -485,16 +493,33 @@ const AccountList = () => {
     }
   };
 
+  const handleRemoveMember = async (email) => {
+    if (!window.confirm(`${t("accountList.check_remove_member")}？\n${email}`)) return;
+
+    try {
+      const res = await removeMember(email);
+      if (res.success) {
+        alert(t("accountList.remove_member_success"));
+        fetchUsers();
+      } else {
+        alert(`${t("accountList.remove_member_fail")}：${res.message}`);
+      }
+    } catch (err) {
+      console.error("移除會員失敗：", err);
+      alert(t("accountList.remove_member_error"));
+    }
+  };
+
   const handleDeleteAccount = async (email) => {
     if (!window.confirm(`${t("accountList.check_delete")}？\n${email}`)) return;
 
     try {
       const res = await deleteAccount(email);
       if (res.success) {
-        alert("✅ " + t("accountList.delete_success"));
-        fetchUsers(); // 重新載入列表
+        alert(t("accountList.delete_success"));
+        fetchUsers();
       } else {
-        alert(`❌ ${t("accountList.delete_fail")}：${res.message}`);
+        alert(`${t("accountList.delete_fail")}：${res.message}`);
       }
     } catch (err) {
       console.error("刪除帳號失敗：", err);
@@ -505,8 +530,8 @@ const AccountList = () => {
 
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (allHosters.length > 0) fetchUsers();
+  }, [allHosters]);
 
   // 本地篩選
   const filteredAccounts = useMemo(() => {
@@ -516,10 +541,9 @@ const AccountList = () => {
         account.email.toLowerCase().includes(q) ||
         account.host.toLowerCase().includes(q);
       const matchesStatus = statusFilter === "所有狀態" || account.status === statusFilter;
-      const matchesRole = roleFilter === "所有角色" || account.role === roleFilter;
-      return matchesSearch && matchesStatus && matchesRole;
+      return matchesSearch && matchesStatus;
     });
-  }, [items, searchTerm, statusFilter, roleFilter]);
+  }, [items, searchTerm, statusFilter]);
 
   // 分頁
   const paginatedData = useMemo(() => {
@@ -667,20 +691,11 @@ const AccountList = () => {
             </Form.Select>
           </div>
 
-          <div className="w-40">
-            <Form.Select aria-label="選擇角色" className="bg-transparent" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-              <option>{t("accountList.all_role")}</option>
-              <option value="一般使用者">{t("accountList.general_user")}</option>
-              <option value="系統管理者">{t("accountList.system_admin")}</option>
-            </Form.Select>
-          </div>
-
           <Button variant="dark" onClick={() => setModalShow(true)}>{t("accountList.user_registration_statistics")}</Button>
           <Button variant="dark" onClick={() => setVisitorModalShow(true)}>{t("accountList.visitor_title")}</Button>
           <UserRegistrationStatistics show={modalShow} onHide={() => setModalShow(false)} />
           <VisitorStatisticsModal show={visitorModalShow} onHide={() => setVisitorModalShow(false)} />
-          <Button variant="dark" href="/backend/account-list/add-account">{t("accountList.add_account")}</Button>
-          <Button variant="secondary" onClick={fetchUsers} disabled={loading}>{t("common.refresh")}</Button>
+          <Button variant="dark" href="/backend/account-list/add-account">{t("accountList.add_member")}</Button>
         </div>
       </div>
 
@@ -700,7 +715,6 @@ const AccountList = () => {
                 <th className="p-3 text-center">{t("accountList.email")}</th>
                 <th className="p-3 text-center">{t("accountList.contact_person")}</th>
                 <th className="p-3 text-center">{t("accountList.project_team")}</th>
-                <th className="p-3 text-center">{t("accountList.role")}</th>
                 <th className="p-3 text-center">{t("accountList.status")}</th>
                 <th className="p-3 text-center">{t("accountList.last_login")}</th>
                 <th className="p-3 text-center">{t("accountList.login_statistics")}</th>
@@ -711,7 +725,7 @@ const AccountList = () => {
             <tbody className="divide-y divide-gray-200">
               {filteredAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-8 text-gray-500">
+                  <td colSpan="8" className="text-center py-8 text-gray-500">
                     {loading ? t("common.loading") : t("accountList.no_accounts_found")}
                   </td>
                 </tr>
@@ -731,11 +745,6 @@ const AccountList = () => {
                     <td className="p-4">{account.email}</td>
                     <td className="p-4">{account.host}</td>
                     <td className="p-4">{account.organization}</td>
-                    <td className="p-4">
-                      <span className={`${account.role === "系統管理者" ? "text-blue-600" : "text-gray-900"}`}>
-                        {account.role}
-                      </span>
-                    </td>
                     <td className="p-4">
                       <span className={`px-2 py-1 rounded text-sm ${account.status === "啟用" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                         {/* {account.status} */}
@@ -783,7 +792,18 @@ const AccountList = () => {
                           />
                         </button>
 
-                        {/* 刪除帳號 */}
+                        {/* 移除會員（只從 hosters 移除） */}
+                        <button
+                          className="p-1 text-orange-600 hover:bg-orange-50 rounded"
+                          title={t("accountList.remove_member")}
+                          onClick={() => handleRemoveMember(account.email)}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
+                          </svg>
+                        </button>
+
+                        {/* 刪除帳號（徹底刪除） */}
                         <button
                           className="p-1 text-red-600 hover:bg-red-50 rounded"
                           title={t("accountList.delete_account")}

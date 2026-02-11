@@ -307,6 +307,7 @@
 
     "user_registration_statistics": "사용자 등록 통계",
     "add_account": "계정 추가",
+    "add_member": "회원 추가",
     "email": "이메일",
     "contact_person": "담당자",
     "project_team": "프로젝트 팀",
@@ -321,6 +322,11 @@
     "enable_account": "계정 활성화",
     "disable_account": "계정 비활성화",
     "delete_account": "계정 삭제",
+    "remove_member": "회원 제거",
+    "check_remove_member": "이 회원을 목록에서 제거하시겠습니까 (계정은 유지됩니다)",
+    "remove_member_success": "회원이 제거되었습니다",
+    "remove_member_fail": "제거 실패",
+    "remove_member_error": "회원 제거 중 오류가 발생했습니다",
 
     "showing": "표시",
     "to": "부터",

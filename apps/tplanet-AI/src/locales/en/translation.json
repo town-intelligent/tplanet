@@ -307,6 +307,7 @@
 
     "user_registration_statistics": "User Registration Statistics",
     "add_account": "Add Account",
+    "add_member": "Add Member",
     "email": "Email",
     "contact_person": "Contact Person",
     "project_team": "Project Team",
@@ -321,6 +322,11 @@
     "enable_account": "Enable Account",
     "disable_account": "Disable Account",
     "delete_account": "Delete Account",
+    "remove_member": "Remove Member",
+    "check_remove_member": "Remove this member from the list (account will be kept)",
+    "remove_member_success": "Member removed",
+    "remove_member_fail": "Remove failed",
+    "remove_member_error": "Error removing member",
 
     "showing": "Showing",
     "to": "to",

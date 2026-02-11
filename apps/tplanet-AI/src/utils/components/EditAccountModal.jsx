@@ -18,13 +18,12 @@ const EditAccountModal = ({ show, onHide, account, onAccountUpdated }) => {
   const [status, setStatus] = useState({ ok: null, msg: "" });
 
   const roleMap = {
-    admin: "系統管理員",
     user: "一般使用者",
   };
 
   const reverseRoleMap = {
-    "系統管理員": "admin",
-    "系統管理者": "admin", // 處理可能的變體
+    "系統管理員": "user",
+    "系統管理者": "user",
     "一般使用者": "user",
   };
 
@@ -184,16 +183,12 @@ const EditAccountModal = ({ show, onHide, account, onAccountUpdated }) => {
             <Col md={6}>
               <Form.Group controlId="editRole">
                 <Form.Label>帳號角色</Form.Label>
-                <Form.Select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">選擇角色</option>
-                  <option value="admin">系統管理員</option>
-                  <option value="user">一般使用者</option>
-                </Form.Select>
+                <Form.Control
+                  type="text"
+                  value="一般使用者"
+                  readOnly
+                  className="bg-gray-100"
+                />
               </Form.Group>
             </Col>
           </Row>

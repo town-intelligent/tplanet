@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useDepartments } from "../../../utils/multi-tenant";
+import { useDepartments, useHosters } from "../../../utils/multi-tenant";
 
 // 固定欄位（UI 使用 SDG1~SDG17）
 const SDG_COLUMNS_UI = Array.from({ length: 17 }, (_, i) => `SDG${i + 1}`);
@@ -13,9 +13,12 @@ const SDGHeatmap = () => {
   const [error, setError] = useState("");
   const { t } = useTranslation();
 
-  // 從 tenant config 取得部門列表，從 localStorage 取得登入者 email
+  // 從 tenant config 取得部門列表和 hosters email
   const departments = useDepartments();
-  const userEmail = localStorage.getItem("email") || "";
+  const allHosters = useHosters();
+  const hosters = useMemo(() => {
+    return allHosters.length > 1 ? allHosters.slice(1) : allHosters;
+  }, [allHosters]);
 
   // Fallback 資料（當 API 掛了或還沒上新 view 參數時，用這個兜住）
   const fallbackRows = useMemo(
@@ -26,37 +29,55 @@ const SDGHeatmap = () => {
     [departments]
   );
 
+  // 追蹤已載入的 hosters key，避免重複請求
+  const loadedKeyRef = useRef('');
+  const hostersKey = useMemo(() => JSON.stringify(hosters), [hosters]);
+
   useEffect(() => {
+    if (!hosters.length || loadedKeyRef.current === hostersKey) return;
+    loadedKeyRef.current = hostersKey;
+
     const fetchData = async () => {
-      const base = import.meta.env.VITE_HOST_URL_TPLANET; // e.g. https://beta-tplanet-backend.ntsdgs.tw
+      const base = import.meta.env.VITE_HOST_URL_TPLANET;
       try {
-        const res = await fetch(`${base}/api/dashboard/sdgs`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: userEmail, view: "by_project_b" }),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-
-        // 後端若還沒上新欄位，這裡會是 undefined → 走 fallback
-        const list = json?.content?.sdgs_by_project_b ?? [];
-
-        // 過濾空白/null project_b（隱匿 null）
-        const clean = list.filter(
-          (r) => ((r?.project_b ?? "").toString().trim().length > 0)
+        // 多帳號並行請求
+        const requests = hosters.map((email) =>
+          fetch(`${base}/api/dashboard/sdgs`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, view: "by_project_b" }),
+          })
+            .then((resp) => {
+              if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+              return resp.json();
+            })
+            .catch((err) => {
+              console.error(`[HeatMap] ${email} 請求失敗：`, err);
+              return null;
+            })
         );
 
-        // project_b -> row（把 "SDG-1" 轉為 "SDG1"）
+        const results = await Promise.all(requests);
+
+        // 合併所有帳號的 sdgs_by_project_b，按 project_b 聚合加總
         const mapByProjectB = {};
-        for (const row of clean) {
-          const project_b = row.project_b;
-          const uiRow = { 局處: project_b };
-          SDG_KEYS_API.forEach((apiKey, idx) => {
-            const uiKey = SDG_COLUMNS_UI[idx];
-            uiRow[uiKey] = Number(row[apiKey] ?? 0);
-          });
-          mapByProjectB[project_b] = uiRow;
-        }
+        results.forEach((json) => {
+          if (!json) return;
+          const list = json?.content?.sdgs_by_project_b ?? [];
+          const clean = list.filter(
+            (r) => ((r?.project_b ?? "").toString().trim().length > 0)
+          );
+          for (const row of clean) {
+            const project_b = row.project_b;
+            if (!mapByProjectB[project_b]) {
+              mapByProjectB[project_b] = { 局處: project_b };
+              SDG_COLUMNS_UI.forEach((k) => { mapByProjectB[project_b][k] = 0; });
+            }
+            SDG_KEYS_API.forEach((apiKey, idx) => {
+              mapByProjectB[project_b][SDG_COLUMNS_UI[idx]] += Number(row[apiKey] ?? 0);
+            });
+          }
+        });
 
         // 以 tenant departments 為基準：API 沒的補 0；API 多出的加在後面
         const merged = [
@@ -84,7 +105,7 @@ const SDGHeatmap = () => {
     };
 
     fetchData();
-  }, [fallbackRows, departments, userEmail]);
+  }, [hostersKey, hosters, fallbackRows, departments]);
 
   // 色階計算（避免全 0 導致除以 0）
   const allValues = rows.flatMap((r) => SDG_COLUMNS_UI.map((c) => r[c]));

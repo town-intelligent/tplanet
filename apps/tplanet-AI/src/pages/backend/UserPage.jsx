@@ -301,7 +301,7 @@ export default function UserPage() {
   const [user] = useState({
     name: "Second Home",
     department: "", // 地方團隊留空
-    phone: "04 9222 2106",
+    phone: "0492657366",
     email: getEmail(),
     role: "使用者",
     password: ""
@@ -356,7 +356,7 @@ export default function UserPage() {
                 }
               );
               const json = await res.json();
-              const hasAttachment = json.result ?? false;
+              const hasAttachment = json.data?.exists ?? json.result ?? false;
 
               return {
                 id: info?.uuid || uuid,

@@ -91,7 +91,7 @@ export default function ProjectContent() {
         });
         if (!response.ok) throw new Error(`HTTP 錯誤！ 狀態: ${response.status}`);
         const data = await response.json();
-        setAttachmentExists(data.result);
+        setAttachmentExists(data.data?.exists ?? data.result ?? false);
       } catch (err) {
         console.error("API 呼叫失敗:", err);
         setError("無法檢查附件狀態，請稍後再試。");

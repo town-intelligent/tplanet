@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import Editor from 'react-simple-wysiwyg';
+import DOMPurify from 'dompurify';
 
 const HomepageEditor = () => {
   const [loading, setLoading] = useState(true);
@@ -170,7 +172,7 @@ const HomepageEditor = () => {
   const updateDescription = (key, value) => {
     setData((prev) => ({
       ...prev,
-      [key]: value,
+      [key]: DOMPurify.sanitize(value),
     }));
   };
 
@@ -339,19 +341,15 @@ const HomepageEditor = () => {
     className = "text-xl",
   }) => (
     <div>
-      <div>
-        <textarea
+      <div className="wysiwyg-content">
+        <Editor
           value={data[descKey] || ""}
           onChange={(e) => updateDescription(descKey, e.target.value)}
           placeholder={placeholder}
-          className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-            errors[descKey] ? "border-red-500" : "border-gray-300"
-          }`}
-          rows="4"
         />
         {errors[descKey] && (
           <div className="mt-1 flex items-center text-red-600 text-sm">
-            ⚠️ {errors[descKey]}
+            {errors[descKey]}
           </div>
         )}
       </div>

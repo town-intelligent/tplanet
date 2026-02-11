@@ -17,6 +17,8 @@ import { Form } from "react-bootstrap";
 import DateIcon from "../../../assets/date-icon.svg";
 import CmsPlanDefault from "../../../assets/cms_plan_default.png";
 import { useTranslation } from "react-i18next";
+import Editor from 'react-simple-wysiwyg';
+import DOMPurify from 'dompurify';
 
 const CmsPlanInfo = () => {
   const { id } = useParams();
@@ -188,6 +190,10 @@ const CmsPlanInfo = () => {
       handleNextPage(event, projectData, id);
     }
   };
+
+  function handleEditorChange(e) {
+    setPhilosophy(DOMPurify.sanitize(e.target.value));
+  }
 
   // 檢查欄位是否都填寫
   const validateFields = () => {
@@ -421,12 +427,10 @@ const CmsPlanInfo = () => {
               <div className="col-9">
                 <p className="bg-[#317EE0] py-2 text-white pl-6">{t("cmsplaninfo.philosophy_title")}</p>
               </div>
-              <div className="col-9">
-                <Form.Control 
-                  as="textarea" 
-                  rows={4} 
+              <div className="col-9 wysiwyg-content">
+                <Editor
                   value={philosophy}
-                  onChange={(e) => setPhilosophy(e.target.value)}
+                  onChange={handleEditorChange}
                   placeholder={t("cmsplaninfo.philosophy_placeholder")}
                 />
               </div>

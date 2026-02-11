@@ -9,6 +9,8 @@ import Image from "../../../assets/image_icon.svg";
 import { useDropzone } from "react-dropzone";
 import { useTranslation } from "react-i18next";
 import i18n from "../../../utils/i18n";
+import Editor from 'react-simple-wysiwyg';
+import DOMPurify from 'dompurify';
 
 const getLocalStorage = (key) => localStorage.getItem(key);
 
@@ -338,9 +340,13 @@ const AddEditNewsForm = ({ newsData, onCancel }) => {
       }
     } catch (e) {
       console.error(e);
+      const isFileTooLarge = e.message === "FILE_TOO_LARGE";
+      const errorMsg = isFileTooLarge
+        ? i18n.t("adminNewsList.news_file_too_large")
+        : i18n.t("adminNewsList.news_add_fail");
       setUploadProgress(i18n.t("adminNewsList.news_upload_fail"));
       setTimeout(() => {
-        alert(i18n.t("adminNewsList.news_add_fail"));
+        alert(errorMsg);
         setIsSubmitting(false);
         setUploadProgress("");
       }, 1000);
@@ -387,13 +393,12 @@ const AddEditNewsForm = ({ newsData, onCancel }) => {
               />
             </div>
 
-            <div className="mb-3">
+            <div className="mb-3 wysiwyg-content">
               <label>{i18n.t("adminNewsList.news_description")}</label>
-              <textarea
+              <Editor
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => setDescription(DOMPurify.sanitize(e.target.value))}
                 placeholder={i18n.t("adminNewsList.news_title_placeholder")}
-                className="w-full border p-2"
               />
             </div>
           </div>

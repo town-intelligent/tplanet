@@ -11,6 +11,8 @@ import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { formatDate } from "../../../utils/Transform";
 import i18n from "../../../utils/i18n";
+import Editor from 'react-simple-wysiwyg';
+import DOMPurify from 'dompurify';
 
 const TaskBlock = ({ task, updateTask, removeTask }) => {
   const { id } = useParams();
@@ -234,16 +236,14 @@ const TaskBlock = ({ task, updateTask, removeTask }) => {
 
             {/* 右側 - 理念傳達 */}
             <div style={{ flex: "1" }}>
-              <Form.Group className="mb-3">
+              <Form.Group className="mb-3 wysiwyg-content">
                 <Form.Label>{i18n.t("cmsImpact.concept")}</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={6}
-                  placeholder={i18n.t("cmsImpact.concept_placeholder")}
+                <Editor
                   value={taskData.overview}
                   onChange={(e) =>
-                    handleInputChange("overview", e.target.value)
+                    handleInputChange("overview", DOMPurify.sanitize(e.target.value))
                   }
+                  placeholder={i18n.t("cmsImpact.concept_placeholder")}
                 />
               </Form.Group>
             </div>

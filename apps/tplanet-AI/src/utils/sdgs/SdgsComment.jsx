@@ -3,6 +3,8 @@ import { sdgData } from "../../utils/Config";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "../../utils/i18n";
+import Editor from 'react-simple-wysiwyg';
+import DOMPurify from 'dompurify';
 
 const useSdgImages = () => {
   const [images, setImages] = useState({});
@@ -72,7 +74,7 @@ const SdgIconItem = ({
   onCommentChange,
 }) => {
   const handleDescriptionChange = (e) => {
-    const newContent = e.target.value;
+    const newContent = DOMPurify.sanitize(e.target.value);
     onCommentChange(sdgId, newContent);
   };
 
@@ -98,12 +100,11 @@ const SdgIconItem = ({
           )}
         </div>
       </div>
-      <div className="w-full ml-4">
-        <Form.Control
-          type="text"
-          placeholder={i18n.t("cmsImpact.sdgs_comment_placeholder", { sdgInfo: sdgInfo.text })}
+      <div className="w-full ml-4 wysiwyg-content">
+        <Editor
           value={comment}
           onChange={handleDescriptionChange}
+          placeholder={i18n.t("cmsImpact.sdgs_comment_placeholder", { sdgInfo: sdgInfo.text })}
         />
       </div>
     </div>

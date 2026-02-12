@@ -8,8 +8,8 @@ services:
     ports:
       - "6176:5170"
     environment:
-      - VITE_HOST_URL_TPLANET=https://multi-tenant.4impact.cc
-      - VITE_API_LLMTWINS=https://multi-tenant.4impact.cc
+      - VITE_HOST_URL_TPLANET=
+      - VITE_API_LLMTWINS=
 
   backend:
     container_name: tplanet-backend-multi-tenant

@@ -14,6 +14,7 @@ services:
       dockerfile: Dockerfile.multi-tenant
     volumes:
       - /var/www/multi-tenant-static/news:/server/backend/static/news
+      - /var/www/multi-tenant-static/uploads:/server/backend/static/uploads
     command: sh -c "pip install gunicorn && cd /server/backend && python manage.py migrate --noinput && gunicorn backend.wsgi:application --bind 0.0.0.0:5567"
 
   db:

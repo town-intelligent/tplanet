@@ -37,7 +37,7 @@ const SiteWizard = () => {
     features: {
       ai_secretary: true,
       news: true,
-      sroi: false,
+      sroi: true,
       analytics: true,
     },
   });
@@ -436,21 +436,21 @@ const SiteWizard = () => {
   // Step 3: Features
   const renderStep3 = () => (
     <div className="space-y-4">
-      <p className="text-gray-600 mb-4">選擇要啟用的功能：</p>
+      <p className="text-gray-600 mb-4">功能列表（目前全部啟用，尚未開放個別切換）：</p>
       {AVAILABLE_FEATURES.map((feature) => (
         <label
           key={feature.key}
-          className="flex items-center p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+          className="flex items-center p-4 bg-gray-100 rounded-lg cursor-not-allowed opacity-75"
         >
           <input
             type="checkbox"
-            checked={formData.features[feature.key] || false}
-            onChange={(e) => updateFeature(feature.key, e.target.checked)}
-            className="w-5 h-5 text-blue-600 rounded"
+            checked={true}
+            disabled
+            className="w-5 h-5 text-blue-600 rounded cursor-not-allowed"
           />
           <div className="ml-3">
-            <p className="font-medium">{feature.label}</p>
-            <p className="text-sm text-gray-500">{feature.description}</p>
+            <p className="font-medium text-gray-500">{feature.label}</p>
+            <p className="text-sm text-gray-400">{feature.description}</p>
           </div>
         </label>
       ))}

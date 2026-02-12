@@ -84,9 +84,14 @@ def tenant_config(request):
     return JsonResponse({
         "tenantId": tenant.tenant_id,
         "name": db_config.name if db_config else tenant.name,
+        "logoUrl": db_config.logo_url if db_config and db_config.logo_url else tenant.config.get("theme", {}).get("logo_url", ""),
         "brandName": tenant.config.get("brand_name", tenant.name),
         "features": db_config.features if db_config and db_config.features else tenant.config.get("features", {}),
-        "theme": tenant.config.get("theme", {}),
+        "theme": {
+            **tenant.config.get("theme", {}),
+            **({"primary_color": db_config.primary_color, "secondary_color": db_config.secondary_color}
+               if db_config and db_config.primary_color else {}),
+        },
         "settings": db_config.settings if db_config and db_config.settings else tenant.config.get("settings", {}),
         "hosters": db_config.hosters if db_config and db_config.hosters else tenant.config.get("hosters", []),
         "departments": db_config.departments if db_config and db_config.departments else tenant.config.get("departments", []),
@@ -303,7 +308,7 @@ def validate_tenant_id(request: HttpRequest, tenant_id: str) -> JsonResponse:
     """Check if a tenant ID is available for creation."""
     from django_multi_tenant.models import TenantConfig
 
-    exists = TenantConfig.objects.filter(tenant_id=tenant_id).exists()
+    exists = TenantConfig.objects.filter(tenant_id=tenant_id, is_active=True).exists()
     return JsonResponse({
         "tenantId": tenant_id,
         "available": not exists,
@@ -343,7 +348,8 @@ def tenant_create(request: HttpRequest) -> JsonResponse:
             }, status=400)
 
     # Check if tenant already exists
-    if TenantConfig.objects.filter(tenant_id=tenant_id).exists():
+    existing = TenantConfig.objects.filter(tenant_id=tenant_id).first()
+    if existing and existing.is_active:
         return JsonResponse({"error": f"Tenant '{tenant_id}' already exists"}, status=400)
 
     # Validate optional fields
@@ -363,21 +369,36 @@ def tenant_create(request: HttpRequest) -> JsonResponse:
     if hosters and not isinstance(hosters, list):
         return JsonResponse({"error": "hosters must be an array"}, status=400)
 
-    # Create tenant
-    tenant = TenantConfig.objects.create(
-        tenant_id=tenant_id,
-        name=_sanitize_string(name, max_length=200),
-        primary_color=data.get("primaryColor", "#1976d2"),
-        secondary_color=data.get("secondaryColor", "#424242"),
-        logo_url=_sanitize_string(data.get("logoUrl"), max_length=2000),
-        banner_image=_sanitize_string(data.get("bannerImage"), max_length=2000),
-        features=data.get("features", {}),
-        departments=data.get("departments", []),
-        hosters=hosters,
-        settings=data.get("settings", {}),
-    )
-
-    logger.info(f"Created new tenant: {tenant_id}")
+    if existing and not existing.is_active:
+        # Re-activate previously deleted tenant with new data
+        existing.name = _sanitize_string(name, max_length=200)
+        existing.primary_color = data.get("primaryColor", "#1976d2")
+        existing.secondary_color = data.get("secondaryColor", "#424242")
+        existing.logo_url = _sanitize_string(data.get("logoUrl"), max_length=2000)
+        existing.banner_image = _sanitize_string(data.get("bannerImage"), max_length=2000)
+        existing.features = data.get("features", {})
+        existing.departments = data.get("departments", [])
+        existing.hosters = hosters
+        existing.settings = data.get("settings", {})
+        existing.is_active = True
+        existing.save()
+        tenant = existing
+        logger.info(f"Re-activated deleted tenant: {tenant_id}")
+    else:
+        # Create new tenant
+        tenant = TenantConfig.objects.create(
+            tenant_id=tenant_id,
+            name=_sanitize_string(name, max_length=200),
+            primary_color=data.get("primaryColor", "#1976d2"),
+            secondary_color=data.get("secondaryColor", "#424242"),
+            logo_url=_sanitize_string(data.get("logoUrl"), max_length=2000),
+            banner_image=_sanitize_string(data.get("bannerImage"), max_length=2000),
+            features=data.get("features", {}),
+            departments=data.get("departments", []),
+            hosters=hosters,
+            settings=data.get("settings", {}),
+        )
+        logger.info(f"Created new tenant: {tenant_id}")
 
     return JsonResponse({
         "success": True,

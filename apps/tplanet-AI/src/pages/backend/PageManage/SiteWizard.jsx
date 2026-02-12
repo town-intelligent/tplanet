@@ -29,6 +29,7 @@ const SiteWizard = () => {
   const [formData, setFormData] = useState({
     tenantId: "",
     name: "",
+    adminEmail: "",            // 站台管理員 email → hosters[0]
     primaryColor: "#1976d2",
     secondaryColor: "#424242",
     logoUrl: "",
@@ -64,6 +65,7 @@ const SiteWizard = () => {
       setFormData({
         tenantId: tenant.tenantId,
         name: tenant.name || "",
+        adminEmail: (tenant.hosters && tenant.hosters[0]) || "",
         primaryColor: tenant.primaryColor || "#1976d2",
         secondaryColor: tenant.secondaryColor || "#424242",
         logoUrl: tenant.logoUrl || "",
@@ -150,6 +152,10 @@ const SiteWizard = () => {
           setError("請輸入站台名稱");
           return false;
         }
+        if (!formData.adminEmail.trim() || !/\S+@\S+\.\S+/.test(formData.adminEmail)) {
+          setError("請輸入有效的站台管理員 Email");
+          return false;
+        }
         return true;
       case 2:
         if (!/^#[0-9A-Fa-f]{6}$/.test(formData.primaryColor)) {
@@ -186,10 +192,17 @@ const SiteWizard = () => {
         ? `${import.meta.env.VITE_HOST_URL_TPLANET}/api/tenant/${editTenantId}`
         : `${import.meta.env.VITE_HOST_URL_TPLANET}/api/tenant/create`;
 
+      const submitData = {
+        ...formData,
+        hosters: [formData.adminEmail.trim()],
+      };
+      delete submitData.adminEmail;
+      delete submitData.createSubdomain;
+
       const response = await fetch(url, {
         method: isEditMode ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       });
 
       const result = await response.json();
@@ -307,6 +320,22 @@ const SiteWizard = () => {
           placeholder="我的站台"
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          站台管理員 Email <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="email"
+          value={formData.adminEmail}
+          onChange={(e) => updateField("adminEmail", e.target.value)}
+          placeholder="admin@example.com"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+        />
+        <p className="mt-1 text-sm text-gray-500">
+          此帳號將成為站台管理員，可登入後台管理會員
+        </p>
       </div>
 
       {/* 子網域設定 */}
@@ -442,6 +471,10 @@ const SiteWizard = () => {
           <div className="flex justify-between py-2 border-b">
             <span className="text-gray-600">站台名稱</span>
             <span className="font-medium">{formData.name}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-gray-600">站台管理員</span>
+            <span className="font-medium">{formData.adminEmail}</span>
           </div>
           {!isEditMode && formData.createSubdomain && (
             <div className="flex justify-between py-2 border-b">

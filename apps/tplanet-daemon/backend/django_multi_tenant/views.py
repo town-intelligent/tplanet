@@ -449,14 +449,40 @@ def tenant_detail(request: HttpRequest, tenant_id: str) -> JsonResponse:
         })
 
     elif request.method == "DELETE":
-        # Soft delete
-        tenant.is_active = False
-        tenant.save()
-        logger.info(f"Deleted tenant: {tenant_id}")
+        from django.contrib.auth.models import User
+        from django_multi_tenant import cloudflare
+
+        deleted_resources = []
+
+        # 1. Delete DNS record
+        dns_result = cloudflare.delete_subdomain(tenant_id)
+        if dns_result.get("success"):
+            deleted_resources.append("dns")
+        logger.info(f"[{tenant_id}] DNS cleanup: {dns_result.get('message', '')}")
+
+        # 2. Delete all hoster users (Django User + AccountProfile cascade)
+        hosters = tenant.hosters or []
+        deleted_users = 0
+        for email in hosters:
+            try:
+                user = User.objects.filter(email=email).first()
+                if user:
+                    user.delete()  # AccountProfile cascades
+                    deleted_users += 1
+            except Exception as e:
+                logger.warning(f"[{tenant_id}] Failed to delete user {email}: {e}")
+        if deleted_users:
+            deleted_resources.append(f"users({deleted_users})")
+
+        # 3. Hard delete TenantConfig
+        tenant.delete()
+        deleted_resources.append("db")
+        logger.info(f"Deleted tenant: {tenant_id} — cleaned: {', '.join(deleted_resources)}")
 
         return JsonResponse({
             "success": True,
             "message": f"Tenant '{tenant_id}' deleted",
+            "cleaned": deleted_resources,
         })
 
 

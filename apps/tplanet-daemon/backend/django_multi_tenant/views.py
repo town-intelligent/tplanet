@@ -396,6 +396,15 @@ def tenant_detail(request: HttpRequest, tenant_id: str) -> JsonResponse:
     """
     from django_multi_tenant.models import TenantConfig
 
+    # Prevent deleting the tenant you're currently on
+    if request.method == "DELETE":
+        current_tenant = get_current_tenant()
+        if current_tenant and current_tenant.tenant_id == tenant_id:
+            return JsonResponse(
+                {"error": "無法刪除目前使用中的站台"},
+                status=400,
+            )
+
     try:
         tenant = TenantConfig.objects.get(tenant_id=tenant_id)
     except TenantConfig.DoesNotExist:
